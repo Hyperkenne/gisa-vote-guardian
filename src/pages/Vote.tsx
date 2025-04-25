@@ -64,6 +64,7 @@ const generalSecretaryCandidates = [
     country: "Uganda",
     course: "B-Tech Civil Engineering",
     position: "General Secretary",
+    photoUrl: "/lovable-uploads/a6903830-cad0-4769-94e1-4c53713f6aba.png"
   },
   {
     id: "gs_02",
@@ -71,6 +72,7 @@ const generalSecretaryCandidates = [
     country: "Nepal",
     course: "BBA",
     position: "General Secretary",
+    photoUrl: "/lovable-uploads/e2d9eb48-7707-43ae-9e94-d5170b2e1edb.png"
   },
 ];
 
