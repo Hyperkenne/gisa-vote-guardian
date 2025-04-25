@@ -1,6 +1,4 @@
-
 import React, { useEffect, useState } from 'react';
-import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { getVoteCounts, AllVoteCounts } from '@/utils/votingUtils';
@@ -64,107 +62,94 @@ const Results = () => {
   };
   
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      
-      <main className="flex-grow">
-        <div className="bg-election-light py-8">
-          <div className="election-container">
-            <h1 className="text-3xl md:text-4xl font-bold text-election-dark">Election Results</h1>
-            <p className="text-gray-600 mt-2">
-              Live voting results updated in real-time.
-            </p>
-          </div>
-        </div>
-        
-        <div className="election-container py-8">
-          <div className="grid grid-cols-1 gap-8">
-            {(Object.keys(positionTitles) as Array<keyof typeof positionTitles>).map((position) => {
-              const totalVotes = getTotalVotes(position);
-              const chartData = formatChartData(position);
-              
-              return (
-                <Card key={position} className="overflow-hidden">
-                  <CardHeader className="bg-election-light">
-                    <CardTitle>{positionTitles[position]} Results</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-6">
-                    <div className="grid md:grid-cols-2 gap-8">
-                      <div className="space-y-6">
-                        {Object.entries(voteCounts[position]).map(([candidateId, votes]) => {
-                          const percent = totalVotes ? Math.round((votes / totalVotes) * 100) : 0;
-                          const candidate = (candidateInfo as any)[candidateId];
-                          
-                          return (
-                            <div key={candidateId} className="space-y-2">
-                              <div className="flex justify-between items-center">
-                                <div>
-                                  <h3 className="font-medium">{candidate?.name || candidateId}</h3>
-                                  <p className="text-sm text-gray-500">
-                                    {candidate?.country} • {candidate?.course}
-                                  </p>
-                                </div>
-                                <div className="text-right">
-                                  <span className="font-bold text-election-primary">{votes}</span>
-                                  <span className="text-gray-500 ml-1">({percent}%)</span>
-                                </div>
-                              </div>
-                              <Progress value={percent} className="h-2" />
-                            </div>
-                          );
-                        })}
-                        
-                        <div className="text-sm text-gray-500 pt-2">
-                          Total votes: {totalVotes}
-                        </div>
-                      </div>
-                      
-                      <div className="h-64">
-                        {chartData.length > 0 ? (
-                          <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                              <Pie
-                                data={chartData}
-                                cx="50%"
-                                cy="50%"
-                                labelLine={false}
-                                outerRadius={80}
-                                fill="#8884d8"
-                                dataKey="value"
-                                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                              >
-                                {chartData.map((entry, index) => (
-                                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                ))}
-                              </Pie>
-                              <Tooltip />
-                              <Legend />
-                            </PieChart>
-                          </ResponsiveContainer>
-                        ) : (
-                          <div className="h-full flex items-center justify-center">
-                            <p className="text-gray-500">No votes recorded yet</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
-      </main>
-      
-      <footer className="bg-gray-900 text-white py-6">
-        <div className="election-container text-center">
-          <p>© 2025 GISA Elections. All rights reserved.</p>
-          <p className="text-sm text-gray-400 mt-2">
-            Secured with device fingerprinting technology
+    <>
+      <div className="bg-election-light py-8">
+        <div className="election-container">
+          <h1 className="text-3xl md:text-4xl font-bold text-election-dark">Election Results</h1>
+          <p className="text-gray-600 mt-2">
+            Live voting results updated in real-time.
           </p>
         </div>
-      </footer>
-    </div>
+      </div>
+      
+      <div className="election-container py-8">
+        <div className="grid grid-cols-1 gap-8">
+          {(Object.keys(positionTitles) as Array<keyof typeof positionTitles>).map((position) => {
+            const totalVotes = getTotalVotes(position);
+            const chartData = formatChartData(position);
+            
+            return (
+              <Card key={position} className="overflow-hidden">
+                <CardHeader className="bg-election-light">
+                  <CardTitle>{positionTitles[position]} Results</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <div className="grid md:grid-cols-2 gap-8">
+                    <div className="space-y-6">
+                      {Object.entries(voteCounts[position]).map(([candidateId, votes]) => {
+                        const percent = totalVotes ? Math.round((votes / totalVotes) * 100) : 0;
+                        const candidate = (candidateInfo as any)[candidateId];
+                        
+                        return (
+                          <div key={candidateId} className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <h3 className="font-medium">{candidate?.name || candidateId}</h3>
+                                <p className="text-sm text-gray-500">
+                                  {candidate?.country} • {candidate?.course}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <span className="font-bold text-election-primary">{votes}</span>
+                                <span className="text-gray-500 ml-1">({percent}%)</span>
+                              </div>
+                            </div>
+                            <Progress value={percent} className="h-2" />
+                          </div>
+                        );
+                      })}
+                      
+                      <div className="text-sm text-gray-500 pt-2">
+                        Total votes: {totalVotes}
+                      </div>
+                    </div>
+                    
+                    <div className="h-64">
+                      {chartData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={chartData}
+                              cx="50%"
+                              cy="50%"
+                              labelLine={false}
+                              outerRadius={80}
+                              fill="#8884d8"
+                              dataKey="value"
+                              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                            >
+                              {chartData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip />
+                            <Legend />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-full flex items-center justify-center">
+                          <p className="text-gray-500">No votes recorded yet</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+    </>
   );
 };
 
