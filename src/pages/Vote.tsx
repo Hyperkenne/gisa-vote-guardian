@@ -36,6 +36,7 @@ const vicePresidentCandidates = [
     country: "South Sudan",
     course: "B-Tech CSE",
     position: "Vice President",
+    photoUrl: "/lovable-uploads/1addf34f-ba63-4210-8d73-f995b08360df.png"
   },
   {
     id: "vp_02",
@@ -43,6 +44,7 @@ const vicePresidentCandidates = [
     country: "Syria",
     course: "B-Tech CSE",
     position: "Vice President",
+    photoUrl: "/lovable-uploads/55682ff6-96fb-4ea7-87d0-08ce14e240e5.png"
   },
   {
     id: "vp_03",
@@ -50,6 +52,7 @@ const vicePresidentCandidates = [
     country: "Nepal",
     course: "MBA",
     position: "Vice President",
+    photoUrl: "/lovable-uploads/169cd655-183e-4866-9173-38e822889a2e.png"
   },
 ];
 
