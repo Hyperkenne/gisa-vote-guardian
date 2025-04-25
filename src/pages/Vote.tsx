@@ -218,7 +218,7 @@ const Vote = () => {
           <Alert className="mb-8">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              You can only vote once for each position from this device. Your vote is anonymous but secured with device fingerprinting.
+              You can only vote once for each position. Your vote is anonymous but secured.
             </AlertDescription>
           </Alert>
         )}
