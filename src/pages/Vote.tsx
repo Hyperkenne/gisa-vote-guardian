@@ -16,6 +16,7 @@ const presidentialCandidates = [
     country: "Nepal",
     course: "BBA",
     position: "President",
+    photoUrl: "/lovable-uploads/365932a8-6f51-4d68-86a2-6a60724ef7a6.png"
   },
   {
     id: "pres_02",
@@ -23,6 +24,7 @@ const presidentialCandidates = [
     country: "Gambia",
     course: "MBA",
     position: "President",
+    photoUrl: "/lovable-uploads/49d8a889-3789-4e61-92f1-65c195464800.png"
   },
 ];
 
