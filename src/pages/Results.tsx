@@ -45,12 +45,16 @@ const Results = () => {
   const isMobile = useIsMobile();
   const { toast } = useToast();
   
-  // Load initial vote counts
+  // Load initial vote counts and set up real-time listener
   useEffect(() => {
+    console.log("Setting up real-time vote listeners");
+    setIsRefreshing(true);
+    
+    // Initial data load
     const loadInitialData = async () => {
-      setIsRefreshing(true);
       try {
         const counts = await getVoteCounts();
+        console.log("Initial vote counts:", counts);
         setVoteCounts(counts);
         setLastRefresh(Date.now());
       } catch (error) {
@@ -74,29 +78,53 @@ const Results = () => {
       setLastRefresh(Date.now());
     });
     
-    // Clean up listener on unmount
-    return unsubscribe;
-  }, [toast]);
+    // Additional refresh on focus
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log("Tab is now visible - refreshing data");
+        handleManualRefresh();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Periodic refresh
+    const refreshInterval = setInterval(() => {
+      console.log("Auto-refreshing data");
+      handleManualRefresh(false);
+    }, isMobile ? 5000 : 10000);  // More frequent refresh on mobile
+    
+    // Clean up listeners on unmount
+    return () => {
+      unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(refreshInterval);
+    };
+  }, [toast, isMobile]);
   
   // Manual refresh handler
-  const handleManualRefresh = async () => {
+  const handleManualRefresh = async (showToast = true) => {
     setIsRefreshing(true);
     try {
       await forceDataReload();
       const counts = await getVoteCounts();
       setVoteCounts(counts);
       setLastRefresh(Date.now());
-      toast({
-        title: "Results refreshed",
-        description: "Latest voting data loaded"
-      });
+      if (showToast) {
+        toast({
+          title: "Results refreshed",
+          description: "Latest voting data loaded"
+        });
+      }
     } catch (error) {
       console.error("Error during manual refresh:", error);
-      toast({
-        title: "Refresh failed",
-        description: "Please try again",
-        variant: "destructive"
-      });
+      if (showToast) {
+        toast({
+          title: "Refresh failed",
+          description: "Please try again",
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsRefreshing(false);
     }
@@ -138,7 +166,7 @@ const Results = () => {
               variant="outline" 
               size="sm"
               className="flex items-center gap-1"
-              onClick={handleManualRefresh}
+              onClick={() => handleManualRefresh()}
               disabled={isRefreshing}
             >
               <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />

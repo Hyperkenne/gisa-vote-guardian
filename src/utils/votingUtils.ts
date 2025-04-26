@@ -1,8 +1,10 @@
+
 import FingerprintJS from "@fingerprintjs/fingerprintjs";
 import { db } from "../services/firebase";
 import { 
   doc, setDoc, getDoc, updateDoc, increment, 
-  collection, getDocs, Timestamp, onSnapshot 
+  collection, getDocs, Timestamp, onSnapshot,
+  serverTimestamp
 } from "firebase/firestore";
 
 // Initialize the fingerprint agent
@@ -23,11 +25,6 @@ export const getVisitorId = async (): Promise<string> => {
   return result.visitorId;
 };
 
-// Vote storage constants - still keep in localStorage for backup
-const VOTE_STORAGE_KEY = 'gisa_election_votes';
-const VOTE_TIMESTAMP_KEY = 'gisa_election_vote_timestamp';
-const VOTE_COUNTS_KEY = 'gisa_election_vote_counts';
-
 // Interface for vote data
 export interface VoteData {
   president: string | null;
@@ -46,9 +43,9 @@ export const initialVoteData: VoteData = {
 
 // Check if the user has already voted
 export const hasVoted = async (position: keyof VoteData): Promise<boolean> => {
-  const visitorId = await getVisitorId();
-  
   try {
+    const visitorId = await getVisitorId();
+    
     // Check in Firebase
     const userVoteRef = doc(db, "userVotes", visitorId);
     const userVoteDoc = await getDoc(userVoteRef);
@@ -58,22 +55,10 @@ export const hasVoted = async (position: keyof VoteData): Promise<boolean> => {
       return data[position] !== null;
     }
     
-    // Check local storage as backup
-    const storedVotes = localStorage.getItem(`${VOTE_STORAGE_KEY}_${visitorId}`);
-    if (storedVotes) {
-      const votes = JSON.parse(storedVotes) as VoteData;
-      return votes[position] !== null;
-    }
-    
     return false;
   } catch (error) {
     console.error("Error checking vote status:", error);
-    // Fallback to localStorage if Firebase fails
-    const storedVotes = localStorage.getItem(`${VOTE_STORAGE_KEY}_${visitorId}`);
-    if (storedVotes) {
-      const votes = JSON.parse(storedVotes) as VoteData;
-      return votes[position] !== null;
-    }
+    // In case of network error, assume not voted to allow retry
     return false;
   }
 };
@@ -95,17 +80,14 @@ export const recordVote = async (position: keyof VoteData, candidateId: string):
     
     if (userVoteDoc.exists()) {
       votes = userVoteDoc.data() as VoteData;
-    } else {
-      // Get from local storage as backup
-      const storedVotes = localStorage.getItem(`${VOTE_STORAGE_KEY}_${visitorId}`);
-      if (storedVotes) {
-        votes = JSON.parse(storedVotes) as VoteData;
-      }
     }
     
     // Update user's vote in Firebase
     votes[position] = candidateId;
-    await setDoc(userVoteRef, votes, { merge: true });
+    await setDoc(userVoteRef, {
+      ...votes,
+      lastUpdated: serverTimestamp()
+    }, { merge: true });
     
     // Update vote count in Firebase
     const voteCountRef = doc(db, "voteCounts", position);
@@ -114,18 +96,17 @@ export const recordVote = async (position: keyof VoteData, candidateId: string):
     if (voteCountDoc.exists()) {
       await updateDoc(voteCountRef, {
         [candidateId]: increment(1),
-        lastUpdated: Timestamp.now()
+        lastUpdated: serverTimestamp()
       });
     } else {
       await setDoc(voteCountRef, {
         [candidateId]: 1,
-        lastUpdated: Timestamp.now()
+        lastUpdated: serverTimestamp()
       });
     }
     
-    // Update local storage as backup
-    localStorage.setItem(`${VOTE_STORAGE_KEY}_${visitorId}`, JSON.stringify(votes));
-    setVoteTimestamp();
+    // Force data reload to update all clients
+    await forceDataReload();
     
     return true;
   } catch (error) {
@@ -145,18 +126,6 @@ export interface AllVoteCounts {
   generalSecretary: VoteCounts;
   sportsWelfare: VoteCounts;
 }
-
-// Set the current timestamp for vote synchronization
-export const setVoteTimestamp = (): void => {
-  const timestamp = Date.now().toString();
-  localStorage.setItem(VOTE_TIMESTAMP_KEY, timestamp);
-};
-
-// Get the last vote timestamp
-export const getVoteTimestamp = (): number => {
-  const timestamp = localStorage.getItem(VOTE_TIMESTAMP_KEY);
-  return timestamp ? parseInt(timestamp, 10) : 0;
-};
 
 // Get vote counts for all positions and candidates from Firebase
 export const getVoteCounts = async (): Promise<AllVoteCounts> => {
@@ -199,7 +168,7 @@ export const getVoteCounts = async (): Promise<AllVoteCounts> => {
   }
 };
 
-// Set up a real-time listener for vote counts
+// Set up a real-time listener for vote counts with better error handling
 export const subscribeToVoteCounts = (
   callback: (counts: AllVoteCounts) => void
 ): (() => void) => {
@@ -212,6 +181,23 @@ export const subscribeToVoteCounts = (
     generalSecretary: {},
     sportsWelfare: {}
   };
+  
+  // Create a listener for system-wide refresh triggers
+  const refreshUnsubscribe = onSnapshot(
+    doc(db, "system", "refreshConfig"),
+    () => {
+      // When system refresh is triggered, fetch all vote counts
+      getVoteCounts().then(counts => {
+        callback({...counts});
+      }).catch(error => {
+        console.error("Error refreshing vote counts:", error);
+      });
+    },
+    (error) => {
+      console.error("Error in system refresh listener:", error);
+    }
+  );
+  unsubscribers.push(refreshUnsubscribe);
   
   positions.forEach((position) => {
     const unsubscribe = onSnapshot(
@@ -254,20 +240,9 @@ export const getUserVotes = async (): Promise<VoteData> => {
       return userVoteDoc.data() as VoteData;
     }
     
-    // Check local storage as backup
-    const storedVotes = localStorage.getItem(`${VOTE_STORAGE_KEY}_${visitorId}`);
-    if (storedVotes) {
-      return JSON.parse(storedVotes) as VoteData;
-    }
-    
     return initialVoteData;
   } catch (error) {
     console.error("Error getting user votes from Firebase:", error);
-    // Fallback to localStorage
-    const storedVotes = localStorage.getItem(`${VOTE_STORAGE_KEY}_${visitorId}`);
-    if (storedVotes) {
-      return JSON.parse(storedVotes) as VoteData;
-    }
     return initialVoteData;
   }
 };
@@ -277,15 +252,10 @@ export const forceDataReload = async (): Promise<void> => {
   try {
     const configRef = doc(db, "system", "refreshConfig");
     await setDoc(configRef, {
-      lastRefresh: Timestamp.now(),
+      lastRefresh: serverTimestamp(),
       refreshId: Math.random().toString(36).substring(2, 15)
     }, { merge: true });
-    
-    // Also update local timestamp
-    setVoteTimestamp();
   } catch (error) {
     console.error("Error forcing data reload:", error);
-    // Fallback to local timestamp
-    setVoteTimestamp();
   }
 };
