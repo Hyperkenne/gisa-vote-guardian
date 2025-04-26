@@ -2,9 +2,11 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { getVoteCounts, AllVoteCounts } from '@/utils/votingUtils';
+import { getVoteCounts, AllVoteCounts, getVoteTimestamp, forceDataReload } from '@/utils/votingUtils';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 // Candidate information for display
 const candidateInfo = {
@@ -38,39 +40,74 @@ const Results = () => {
     sportsWelfare: {}
   });
   const [lastRefresh, setLastRefresh] = useState<number>(Date.now());
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const isMobile = useIsMobile();
+  
+  // Function to load the latest vote counts
+  const loadVoteCounts = () => {
+    // Clear any cached data by accessing localStorage directly
+    setIsRefreshing(true);
+    
+    // Force refresh by clearing cache
+    window.localStorage.getItem(Math.random().toString());
+    
+    // Get the latest vote counts
+    const counts = getVoteCounts();
+    setVoteCounts(counts);
+    setLastRefresh(Date.now());
+    
+    console.log("Vote counts refreshed at:", new Date().toLocaleTimeString());
+    
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 500);
+  };
+  
+  // Manual refresh handler
+  const handleManualRefresh = () => {
+    forceDataReload();
+    loadVoteCounts();
+  };
   
   // Load vote counts
   useEffect(() => {
-    // Function to load the latest vote counts
-    const loadVoteCounts = () => {
-      // Force localStorage refresh by getting the item first
-      const timestamp = localStorage.getItem('gisa_election_vote_counts_timestamp');
-      setVoteCounts(getVoteCounts());
-      setLastRefresh(Date.now());
-      console.log("Vote counts refreshed at:", new Date().toLocaleTimeString());
-    };
-    
     // Initial load
     loadVoteCounts();
     
     // Set up periodic refresh - more frequently on mobile to compensate for possible suspend states
     const intervalId = setInterval(() => {
       loadVoteCounts();
-    }, isMobile ? 3000 : 5000);
+    }, isMobile ? 2000 : 3000);
     
-    // Add a focus event listener to refresh data when tab becomes active
+    // Check for timestamp changes to detect votes from other devices
+    const timestampCheckId = setInterval(() => {
+      const timestamp = getVoteTimestamp();
+      if (timestamp > lastRefresh) {
+        loadVoteCounts();
+      }
+    }, 1000);
+    
+    // Add focus and visibility change event listeners
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadVoteCounts();
+      }
+    };
+    
     const handleFocus = () => {
       loadVoteCounts();
     };
     
     window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     
     return () => {
       clearInterval(intervalId);
+      clearInterval(timestampCheckId);
       window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isMobile]);
+  }, [isMobile, lastRefresh]);
   
   // Calculate total votes for a position
   const getTotalVotes = (position: keyof AllVoteCounts) => {
@@ -89,10 +126,32 @@ const Results = () => {
     <>
       <div className="bg-election-light py-8">
         <div className="election-container">
-          <h1 className="text-3xl md:text-4xl font-bold text-election-dark">Election Results</h1>
-          <p className="text-gray-600 mt-2">
-            Live voting results updated in real-time. Last refreshed: {new Date(lastRefresh).toLocaleTimeString()}
-          </p>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold text-election-dark">Election Results</h1>
+              <p className="text-gray-600 mt-2 flex items-center">
+                Live results updated in real-time. 
+                <span className="ml-2">
+                  Last refreshed: {new Date(lastRefresh).toLocaleTimeString()}
+                </span>
+                {isRefreshing && (
+                  <span className="ml-2 inline-flex items-center text-election-primary">
+                    <RefreshCw className="h-3 w-3 animate-spin mr-1" /> Updating...
+                  </span>
+                )}
+              </p>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="flex items-center gap-1"
+              onClick={handleManualRefresh}
+              disabled={isRefreshing}
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </div>
       </div>
       

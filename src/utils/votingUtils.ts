@@ -22,6 +22,7 @@ export const getVisitorId = async (): Promise<string> => {
 // Vote storage constants
 const VOTE_STORAGE_KEY = 'gisa_election_votes';
 const VOTE_COUNTS_KEY = 'gisa_election_vote_counts';
+const VOTE_TIMESTAMP_KEY = 'gisa_election_vote_timestamp';
 
 // Interface for vote data
 export interface VoteData {
@@ -73,8 +74,8 @@ export const recordVote = async (position: keyof VoteData, candidateId: string):
     // Update global vote count in localStorage (simulating a database)
     updateVoteCount(position, candidateId);
     
-    // Force a timestamp update to ensure data consistency across devices
-    syncVoteCounts();
+    // Set timestamp to force refresh on other devices
+    setVoteTimestamp();
     
     return true;
   } catch (error) {
@@ -95,12 +96,16 @@ export interface AllVoteCounts {
   sportsWelfare: VoteCounts;
 }
 
-// Ensure vote counts are synchronized
-const syncVoteCounts = (): void => {
-  // Add a timestamp to force refresh when checking from other devices
-  const counts = getVoteCounts();
-  localStorage.setItem(`${VOTE_COUNTS_KEY}_timestamp`, Date.now().toString());
-  localStorage.setItem(VOTE_COUNTS_KEY, JSON.stringify(counts));
+// Set the current timestamp for vote synchronization
+const setVoteTimestamp = (): void => {
+  const timestamp = Date.now().toString();
+  localStorage.setItem(VOTE_TIMESTAMP_KEY, timestamp);
+};
+
+// Get the last vote timestamp
+export const getVoteTimestamp = (): number => {
+  const timestamp = localStorage.getItem(VOTE_TIMESTAMP_KEY);
+  return timestamp ? parseInt(timestamp, 10) : 0;
 };
 
 // Update vote count for a candidate
@@ -125,6 +130,9 @@ const updateVoteCount = (position: keyof VoteData, candidateId: string): void =>
   counts[position][candidateId]++;
   
   localStorage.setItem(VOTE_COUNTS_KEY, JSON.stringify(counts));
+  
+  // Set timestamp for synchronization
+  setVoteTimestamp();
 };
 
 // Get vote counts for all positions and candidates
@@ -150,4 +158,9 @@ export const getUserVotes = async (): Promise<VoteData> => {
   if (!storedVotes) return initialVoteData;
   
   return JSON.parse(storedVotes) as VoteData;
+};
+
+// Force reload of data on all current sessions
+export const forceDataReload = (): void => {
+  setVoteTimestamp();
 };
