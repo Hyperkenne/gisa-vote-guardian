@@ -2,11 +2,12 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { getVoteCounts, AllVoteCounts, getVoteTimestamp, forceDataReload } from '@/utils/votingUtils';
+import { getVoteCounts, AllVoteCounts, forceDataReload, subscribeToVoteCounts } from '@/utils/votingUtils';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/use-toast';
 
 // Candidate information for display
 const candidateInfo = {
@@ -42,72 +43,64 @@ const Results = () => {
   const [lastRefresh, setLastRefresh] = useState<number>(Date.now());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const isMobile = useIsMobile();
+  const { toast } = useToast();
   
-  // Function to load the latest vote counts
-  const loadVoteCounts = () => {
-    // Clear any cached data by accessing localStorage directly
-    setIsRefreshing(true);
+  // Load initial vote counts
+  useEffect(() => {
+    const loadInitialData = async () => {
+      setIsRefreshing(true);
+      try {
+        const counts = await getVoteCounts();
+        setVoteCounts(counts);
+        setLastRefresh(Date.now());
+      } catch (error) {
+        console.error("Error loading initial vote counts:", error);
+        toast({
+          title: "Error loading results",
+          description: "Please try refreshing the page",
+          variant: "destructive"
+        });
+      } finally {
+        setIsRefreshing(false);
+      }
+    };
     
-    // Force refresh by clearing cache
-    window.localStorage.getItem(Math.random().toString());
+    loadInitialData();
     
-    // Get the latest vote counts
-    const counts = getVoteCounts();
-    setVoteCounts(counts);
-    setLastRefresh(Date.now());
+    // Set up real-time listener
+    const unsubscribe = subscribeToVoteCounts((newCounts) => {
+      console.log("Received real-time vote update:", newCounts);
+      setVoteCounts(newCounts);
+      setLastRefresh(Date.now());
+    });
     
-    console.log("Vote counts refreshed at:", new Date().toLocaleTimeString());
-    
-    setTimeout(() => {
-      setIsRefreshing(false);
-    }, 500);
-  };
+    // Clean up listener on unmount
+    return unsubscribe;
+  }, [toast]);
   
   // Manual refresh handler
-  const handleManualRefresh = () => {
-    forceDataReload();
-    loadVoteCounts();
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await forceDataReload();
+      const counts = await getVoteCounts();
+      setVoteCounts(counts);
+      setLastRefresh(Date.now());
+      toast({
+        title: "Results refreshed",
+        description: "Latest voting data loaded"
+      });
+    } catch (error) {
+      console.error("Error during manual refresh:", error);
+      toast({
+        title: "Refresh failed",
+        description: "Please try again",
+        variant: "destructive"
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
   };
-  
-  // Load vote counts
-  useEffect(() => {
-    // Initial load
-    loadVoteCounts();
-    
-    // Set up periodic refresh - more frequently on mobile to compensate for possible suspend states
-    const intervalId = setInterval(() => {
-      loadVoteCounts();
-    }, isMobile ? 2000 : 3000);
-    
-    // Check for timestamp changes to detect votes from other devices
-    const timestampCheckId = setInterval(() => {
-      const timestamp = getVoteTimestamp();
-      if (timestamp > lastRefresh) {
-        loadVoteCounts();
-      }
-    }, 1000);
-    
-    // Add focus and visibility change event listeners
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        loadVoteCounts();
-      }
-    };
-    
-    const handleFocus = () => {
-      loadVoteCounts();
-    };
-    
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      clearInterval(intervalId);
-      clearInterval(timestampCheckId);
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [isMobile, lastRefresh]);
   
   // Calculate total votes for a position
   const getTotalVotes = (position: keyof AllVoteCounts) => {
