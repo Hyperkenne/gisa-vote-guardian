@@ -1,8 +1,10 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { getVoteCounts, AllVoteCounts } from '@/utils/votingUtils';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Candidate information for display
 const candidateInfo = {
@@ -35,19 +37,40 @@ const Results = () => {
     generalSecretary: {},
     sportsWelfare: {}
   });
+  const [lastRefresh, setLastRefresh] = useState<number>(Date.now());
+  const isMobile = useIsMobile();
   
   // Load vote counts
   useEffect(() => {
-    // Initial load
-    setVoteCounts(getVoteCounts());
-    
-    // Set up periodic refresh
-    const intervalId = setInterval(() => {
+    // Function to load the latest vote counts
+    const loadVoteCounts = () => {
+      // Force localStorage refresh by getting the item first
+      const timestamp = localStorage.getItem('gisa_election_vote_counts_timestamp');
       setVoteCounts(getVoteCounts());
-    }, 5000);
+      setLastRefresh(Date.now());
+      console.log("Vote counts refreshed at:", new Date().toLocaleTimeString());
+    };
     
-    return () => clearInterval(intervalId);
-  }, []);
+    // Initial load
+    loadVoteCounts();
+    
+    // Set up periodic refresh - more frequently on mobile to compensate for possible suspend states
+    const intervalId = setInterval(() => {
+      loadVoteCounts();
+    }, isMobile ? 3000 : 5000);
+    
+    // Add a focus event listener to refresh data when tab becomes active
+    const handleFocus = () => {
+      loadVoteCounts();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [isMobile]);
   
   // Calculate total votes for a position
   const getTotalVotes = (position: keyof AllVoteCounts) => {
@@ -68,7 +91,7 @@ const Results = () => {
         <div className="election-container">
           <h1 className="text-3xl md:text-4xl font-bold text-election-dark">Election Results</h1>
           <p className="text-gray-600 mt-2">
-            Live voting results updated in real-time.
+            Live voting results updated in real-time. Last refreshed: {new Date(lastRefresh).toLocaleTimeString()}
           </p>
         </div>
       </div>

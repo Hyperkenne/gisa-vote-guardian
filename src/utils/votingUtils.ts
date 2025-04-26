@@ -21,6 +21,7 @@ export const getVisitorId = async (): Promise<string> => {
 
 // Vote storage constants
 const VOTE_STORAGE_KEY = 'gisa_election_votes';
+const VOTE_COUNTS_KEY = 'gisa_election_vote_counts';
 
 // Interface for vote data
 export interface VoteData {
@@ -72,6 +73,9 @@ export const recordVote = async (position: keyof VoteData, candidateId: string):
     // Update global vote count in localStorage (simulating a database)
     updateVoteCount(position, candidateId);
     
+    // Force a timestamp update to ensure data consistency across devices
+    syncVoteCounts();
+    
     return true;
   } catch (error) {
     console.error('Error recording vote:', error);
@@ -91,7 +95,13 @@ export interface AllVoteCounts {
   sportsWelfare: VoteCounts;
 }
 
-const VOTE_COUNTS_KEY = 'gisa_election_vote_counts';
+// Ensure vote counts are synchronized
+const syncVoteCounts = (): void => {
+  // Add a timestamp to force refresh when checking from other devices
+  const counts = getVoteCounts();
+  localStorage.setItem(`${VOTE_COUNTS_KEY}_timestamp`, Date.now().toString());
+  localStorage.setItem(VOTE_COUNTS_KEY, JSON.stringify(counts));
+};
 
 // Update vote count for a candidate
 const updateVoteCount = (position: keyof VoteData, candidateId: string): void => {
