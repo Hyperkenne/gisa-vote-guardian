@@ -20,7 +20,7 @@ const presidentialCandidates = [
   },
   {
     id: "pres_02",
-    name: "Mohammed Lamin Jabba",
+    name: "Muhammed Lamin Jabbi",
     country: "Gambia",
     course: "MBA",
     position: "President",
@@ -83,6 +83,13 @@ const sportsWelfareCandidates = [
     name: "Sylvester Mbah",
     country: "Cameroon",
     course: "B-Tech Mechanical Engineering",
+    position: "Sports & Welfare",
+  },
+  {
+    id: "sw_02",
+    name: "Elsa Farhan Agung",
+    country: "Indonesia",
+    course: "BBA",
     position: "Sports & Welfare",
   },
 ];

@@ -7,13 +7,14 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recha
 // Candidate information for display
 const candidateInfo = {
   "pres_01": { name: "Sophiya Sharma", country: "Nepal", course: "BBA" },
-  "pres_02": { name: "Mohammed Lamin Jabba", country: "Gambia", course: "MBA" },
+  "pres_02": { name: "Muhammed Lamin Jabbi", country: "Gambia", course: "MBA" },
   "vp_01": { name: "Yak Majok", country: "South Sudan", course: "B-Tech CSE" },
   "vp_02": { name: "Ibrahim Hafez", country: "Syria", course: "B-Tech CSE" },
   "vp_03": { name: "Hrishita Rauniyar", country: "Nepal", course: "MBA" },
   "gs_01": { name: "Malinga Aaron", country: "Uganda", course: "B-Tech Civil Engineering" },
   "gs_02": { name: "Kusum Patel", country: "Nepal", course: "BBA" },
   "sw_01": { name: "Sylvester Mbah", country: "Cameroon", course: "B-Tech Mechanical Engineering" },
+  "sw_02": { name: "Elsa Farhan Agung", country: "Indonesia", course: "BBA" },
 };
 
 // Position titles for display
