@@ -1,4 +1,3 @@
-
 import FingerprintJS from "@fingerprintjs/fingerprintjs";
 import { db } from "../services/firebase";
 import { 
@@ -274,5 +273,45 @@ export const forceDataReload = async (): Promise<void> => {
     }, { merge: true });
   } catch (error) {
     console.error("Error forcing data reload:", error);
+  }
+};
+
+// New function to reset vote counts for all positions
+export const resetVoteCounts = async (): Promise<boolean> => {
+  try {
+    console.log("Resetting all vote counts");
+    
+    // Positions to reset
+    const positions = ['president', 'vicePresident', 'generalSecretary', 'sportsWelfare'];
+    
+    // Reset each position's vote count
+    for (const position of positions) {
+      const voteCountRef = doc(db, "voteCounts", position);
+      
+      // Set the document with empty vote counts
+      await setDoc(voteCountRef, {
+        lastUpdated: serverTimestamp()
+      });
+      
+      console.log(`Reset vote count for ${position}`);
+    }
+    
+    // Reset user votes collection
+    const userVotesRef = collection(db, "userVotes");
+    const userVotesSnapshot = await getDocs(userVotesRef);
+    
+    // Delete all existing user vote documents
+    const deletePromises = userVotesSnapshot.docs.map(doc => doc.ref.delete());
+    await Promise.all(deletePromises);
+    
+    console.log("Deleted all user vote documents");
+    
+    // Force data reload to update all clients
+    await forceDataReload();
+    
+    return true;
+  } catch (error) {
+    console.error('Error resetting vote counts:', error);
+    return false;
   }
 };
