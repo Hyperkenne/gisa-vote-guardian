@@ -53,8 +53,10 @@ const Results = () => {
     // Initial data load
     const loadInitialData = async () => {
       try {
+        // Force a data reload first to ensure we get the latest data
+        await forceDataReload();
         const counts = await getVoteCounts();
-        console.log("Initial vote counts:", counts);
+        console.log("Initial vote counts loaded:", counts);
         setVoteCounts(counts);
         setLastRefresh(Date.now());
       } catch (error) {
@@ -71,10 +73,11 @@ const Results = () => {
     
     loadInitialData();
     
-    // Set up real-time listener
+    // Set up real-time listener with immediate callback to ensure data is displayed
     const unsubscribe = subscribeToVoteCounts((newCounts) => {
       console.log("Received real-time vote update:", newCounts);
-      setVoteCounts(newCounts);
+      // Deep clone to ensure we trigger a re-render
+      setVoteCounts(JSON.parse(JSON.stringify(newCounts)));
       setLastRefresh(Date.now());
     });
     
@@ -82,34 +85,43 @@ const Results = () => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         console.log("Tab is now visible - refreshing data");
-        handleManualRefresh();
+        handleManualRefresh(false);
       }
     };
     
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
-    // Periodic refresh
+    // More frequent refresh interval
     const refreshInterval = setInterval(() => {
       console.log("Auto-refreshing data");
       handleManualRefresh(false);
-    }, isMobile ? 5000 : 10000);  // More frequent refresh on mobile
+    }, isMobile ? 3000 : 5000);  // More frequent refresh, especially on mobile
     
     // Clean up listeners on unmount
     return () => {
       unsubscribe();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       clearInterval(refreshInterval);
+      console.log("Cleaned up vote listeners and intervals");
     };
   }, [toast, isMobile]);
   
-  // Manual refresh handler
+  // Manual refresh handler with immediate feedback
   const handleManualRefresh = async (showToast = true) => {
     setIsRefreshing(true);
     try {
+      console.log("Manual refresh triggered");
       await forceDataReload();
+      
+      // Add small delay to ensure Firebase has time to update
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       const counts = await getVoteCounts();
-      setVoteCounts(counts);
+      console.log("Manual refresh results:", counts);
+      
+      setVoteCounts({...counts});
       setLastRefresh(Date.now());
+      
       if (showToast) {
         toast({
           title: "Results refreshed",
@@ -143,6 +155,14 @@ const Results = () => {
     }));
   };
   
+  // Check if we have any votes for any position
+  const hasAnyVotes = Object.keys(voteCounts).some(pos => 
+    Object.keys(voteCounts[pos as keyof AllVoteCounts]).length > 0
+  );
+
+  console.log("Current vote counts:", voteCounts);
+  console.log("Has any votes:", hasAnyVotes);
+  
   return (
     <>
       <div className="bg-election-light py-8">
@@ -150,8 +170,8 @@ const Results = () => {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl md:text-4xl font-bold text-election-dark">Election Results</h1>
-              <p className="text-gray-600 mt-2 flex items-center">
-                Live results updated in real-time. 
+              <p className="text-gray-600 mt-2 flex items-center flex-wrap">
+                <span>Live results updated in real-time.</span> 
                 <span className="ml-2">
                   Last refreshed: {new Date(lastRefresh).toLocaleTimeString()}
                 </span>
@@ -177,6 +197,19 @@ const Results = () => {
       </div>
       
       <div className="election-container py-8">
+        {!hasAnyVotes && (
+          <Card className="mb-8 p-6 text-center">
+            <p className="text-gray-500">No votes have been recorded yet. Be the first to vote!</p>
+            <Button 
+              variant="default" 
+              className="mt-4"
+              onClick={() => window.location.href = '/vote'}
+            >
+              Go to Voting Page
+            </Button>
+          </Card>
+        )}
+        
         <div className="grid grid-cols-1 gap-8">
           {(Object.keys(positionTitles) as Array<keyof typeof positionTitles>).map((position) => {
             const totalVotes = getTotalVotes(position);
@@ -190,32 +223,40 @@ const Results = () => {
                 <CardContent className="pt-6">
                   <div className="grid md:grid-cols-2 gap-8">
                     <div className="space-y-6">
-                      {Object.entries(voteCounts[position]).map(([candidateId, votes]) => {
-                        const percent = totalVotes ? Math.round((votes / totalVotes) * 100) : 0;
-                        const candidate = (candidateInfo as any)[candidateId];
-                        
-                        return (
-                          <div key={candidateId} className="space-y-2">
-                            <div className="flex justify-between items-center">
-                              <div>
-                                <h3 className="font-medium">{candidate?.name || candidateId}</h3>
-                                <p className="text-sm text-gray-500">
-                                  {candidate?.country} • {candidate?.course}
-                                </p>
+                      {Object.entries(voteCounts[position]).length > 0 ? (
+                        <>
+                          {Object.entries(voteCounts[position]).map(([candidateId, votes]) => {
+                            const percent = totalVotes ? Math.round((votes / totalVotes) * 100) : 0;
+                            const candidate = (candidateInfo as any)[candidateId];
+                            
+                            return (
+                              <div key={candidateId} className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                  <div>
+                                    <h3 className="font-medium">{candidate?.name || candidateId}</h3>
+                                    <p className="text-sm text-gray-500">
+                                      {candidate?.country} • {candidate?.course}
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <span className="font-bold text-election-primary">{votes}</span>
+                                    <span className="text-gray-500 ml-1">({percent}%)</span>
+                                  </div>
+                                </div>
+                                <Progress value={percent} className="h-2" />
                               </div>
-                              <div className="text-right">
-                                <span className="font-bold text-election-primary">{votes}</span>
-                                <span className="text-gray-500 ml-1">({percent}%)</span>
-                              </div>
-                            </div>
-                            <Progress value={percent} className="h-2" />
+                            );
+                          })}
+                          
+                          <div className="text-sm text-gray-500 pt-2">
+                            Total votes: {totalVotes}
                           </div>
-                        );
-                      })}
-                      
-                      <div className="text-sm text-gray-500 pt-2">
-                        Total votes: {totalVotes}
-                      </div>
+                        </>
+                      ) : (
+                        <div className="py-8 text-center text-gray-500">
+                          No votes recorded for this position yet
+                        </div>
+                      )}
                     </div>
                     
                     <div className="h-64">

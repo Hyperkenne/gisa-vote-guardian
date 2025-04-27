@@ -63,46 +63,54 @@ export const hasVoted = async (position: keyof VoteData): Promise<boolean> => {
   }
 };
 
-// Record a vote for a position
+// Record a vote for a position - Fixed to ensure vote counts are properly updated
 export const recordVote = async (position: keyof VoteData, candidateId: string): Promise<boolean> => {
   try {
+    console.log(`Recording vote for ${position}: ${candidateId}`);
     const visitorId = await getVisitorId();
     
-    // Check if already voted
+    // Check if already voted for this position
     if (await hasVoted(position)) {
+      console.log(`User already voted for ${position}`);
       return false;
     }
     
     // Get user's current votes
-    let votes: VoteData = initialVoteData;
+    let votes: VoteData = {...initialVoteData};
     const userVoteRef = doc(db, "userVotes", visitorId);
     const userVoteDoc = await getDoc(userVoteRef);
     
     if (userVoteDoc.exists()) {
-      votes = userVoteDoc.data() as VoteData;
+      votes = {...userVoteDoc.data() as VoteData};
     }
     
     // Update user's vote in Firebase
     votes[position] = candidateId;
+    console.log(`Saving vote data for user:`, votes);
     await setDoc(userVoteRef, {
       ...votes,
       lastUpdated: serverTimestamp()
     }, { merge: true });
     
-    // Update vote count in Firebase
+    // Update vote count in Firebase - ensure the document exists first
     const voteCountRef = doc(db, "voteCounts", position);
     const voteCountDoc = await getDoc(voteCountRef);
     
+    // If the document exists, update it
     if (voteCountDoc.exists()) {
+      console.log(`Updating existing vote count for ${position}, candidate ${candidateId}`);
       await updateDoc(voteCountRef, {
         [candidateId]: increment(1),
         lastUpdated: serverTimestamp()
       });
     } else {
-      await setDoc(voteCountRef, {
+      // If the document doesn't exist, create it with an initial value
+      console.log(`Creating new vote count for ${position}, candidate ${candidateId}`);
+      const initialData: any = {
         [candidateId]: 1,
         lastUpdated: serverTimestamp()
-      });
+      };
+      await setDoc(voteCountRef, initialData);
     }
     
     // Force data reload to update all clients
@@ -127,7 +135,7 @@ export interface AllVoteCounts {
   sportsWelfare: VoteCounts;
 }
 
-// Get vote counts for all positions and candidates from Firebase
+// Get vote counts for all positions and candidates from Firebase - improved error handling
 export const getVoteCounts = async (): Promise<AllVoteCounts> => {
   const result: AllVoteCounts = {
     president: {},
@@ -137,6 +145,7 @@ export const getVoteCounts = async (): Promise<AllVoteCounts> => {
   };
   
   try {
+    console.log("Fetching vote counts from Firebase");
     // Get all vote counts from Firebase
     const positions = Object.keys(result) as Array<keyof AllVoteCounts>;
     
@@ -146,19 +155,23 @@ export const getVoteCounts = async (): Promise<AllVoteCounts> => {
       
       if (voteCountDoc.exists()) {
         const data = voteCountDoc.data();
+        console.log(`Vote counts for ${position}:`, data);
         // Filter out non-count fields like timestamp
         Object.entries(data).forEach(([key, value]) => {
           if (key !== "lastUpdated" && typeof value === "number") {
             result[position][key] = value;
           }
         });
+      } else {
+        console.log(`No vote count document exists for ${position}`);
       }
     }
     
+    console.log("Final vote counts:", result);
     return result;
   } catch (error) {
     console.error("Error getting vote counts from Firebase:", error);
-    // Return empty object
+    // Return empty object on error
     return {
       president: {},
       vicePresident: {},
@@ -168,24 +181,18 @@ export const getVoteCounts = async (): Promise<AllVoteCounts> => {
   }
 };
 
-// Set up a real-time listener for vote counts with better error handling
+// Set up a real-time listener for vote counts with improved error handling
 export const subscribeToVoteCounts = (
   callback: (counts: AllVoteCounts) => void
 ): (() => void) => {
   const positions = ["president", "vicePresident", "generalSecretary", "sportsWelfare"];
   const unsubscribers: Array<() => void> = [];
   
-  const combinedResults: AllVoteCounts = {
-    president: {},
-    vicePresident: {},
-    generalSecretary: {},
-    sportsWelfare: {}
-  };
-  
   // Create a listener for system-wide refresh triggers
   const refreshUnsubscribe = onSnapshot(
     doc(db, "system", "refreshConfig"),
-    () => {
+    (doc) => {
+      console.log("System refresh triggered, fetching all vote counts");
       // When system refresh is triggered, fetch all vote counts
       getVoteCounts().then(counts => {
         callback({...counts});
@@ -199,19 +206,24 @@ export const subscribeToVoteCounts = (
   );
   unsubscribers.push(refreshUnsubscribe);
   
+  // Set up individual listeners for each position
   positions.forEach((position) => {
+    console.log(`Setting up listener for ${position}`);
     const unsubscribe = onSnapshot(
-      doc(db, "voteCounts", position), 
+      doc(db, "voteCounts", position),
       (doc) => {
         if (doc.exists()) {
           const data = doc.data();
-          // Filter out non-count fields
-          Object.entries(data).forEach(([key, value]) => {
-            if (key !== "lastUpdated" && typeof value === "number") {
-              combinedResults[position as keyof AllVoteCounts][key] = value as number;
-            }
+          console.log(`Real-time update for ${position}:`, data);
+          
+          // Get the current combined result first
+          getVoteCounts().then(fullCounts => {
+            callback({...fullCounts});
+          }).catch(error => {
+            console.error(`Error getting full counts after update to ${position}:`, error);
           });
-          callback({...combinedResults});
+        } else {
+          console.log(`No document exists for ${position} in real-time update`);
         }
       },
       (error) => {
@@ -233,13 +245,17 @@ export const getUserVotes = async (): Promise<VoteData> => {
   const visitorId = await getVisitorId();
   
   try {
+    console.log("Fetching user votes with visitor ID:", visitorId);
     const userVoteRef = doc(db, "userVotes", visitorId);
     const userVoteDoc = await getDoc(userVoteRef);
     
     if (userVoteDoc.exists()) {
-      return userVoteDoc.data() as VoteData;
+      const data = userVoteDoc.data() as VoteData;
+      console.log("User votes found:", data);
+      return data;
     }
     
+    console.log("No user votes found, returning initial vote data");
     return initialVoteData;
   } catch (error) {
     console.error("Error getting user votes from Firebase:", error);
@@ -250,6 +266,7 @@ export const getUserVotes = async (): Promise<VoteData> => {
 // Force reload of data for all clients
 export const forceDataReload = async (): Promise<void> => {
   try {
+    console.log("Forcing data reload for all clients");
     const configRef = doc(db, "system", "refreshConfig");
     await setDoc(configRef, {
       lastRefresh: serverTimestamp(),
