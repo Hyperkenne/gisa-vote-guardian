@@ -4,9 +4,20 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import VoteSection from '@/components/VoteSection';
-import { initialVoteData, VoteData, getUserVotes, recordVote, hasVoted } from '@/utils/votingUtils';
-import { AlertCircle, CheckCircle } from 'lucide-react';
+import { initialVoteData, VoteData, getUserVotes, recordVote, hasVoted, resetVoteCounts } from '@/utils/votingUtils';
+import { AlertCircle, CheckCircle, Settings } from 'lucide-react';
 
 // Presidential candidates
 const presidentialCandidates = [
@@ -180,7 +191,40 @@ const Vote = () => {
       });
     }
   };
-  
+
+  const handleReset = async () => {
+    try {
+      const success = await resetVoteCounts();
+      if (success) {
+        toast({
+          title: "Votes Reset",
+          description: "All votes have been successfully reset.",
+        });
+        // Reset local state
+        setVotes(initialVoteData);
+        setVotedPositions({
+          president: false,
+          vicePresident: false,
+          generalSecretary: false,
+          sportsWelfare: false,
+        });
+      } else {
+        toast({
+          title: "Reset Failed",
+          description: "Failed to reset votes. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error resetting votes:', error);
+      toast({
+        title: "Error",
+        description: "An error occurred while resetting votes.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -191,15 +235,43 @@ const Vote = () => {
       </div>
     );
   }
-  
+
   return (
     <>
       <div className="bg-election-light py-8">
-        <div className="election-container">
-          <h1 className="text-3xl md:text-4xl font-bold text-election-dark">Cast Your Vote</h1>
-          <p className="text-gray-600 mt-2">
-            Select one candidate for each position. You can only vote once per position.
-          </p>
+        <div className="election-container flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold text-election-dark">Cast Your Vote</h1>
+            <p className="text-gray-600 mt-2">
+              Select one candidate for each position. You can only vote once per position.
+            </p>
+          </div>
+          
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Settings className="h-4 w-4" />
+                Reset Votes
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Reset All Votes?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action will reset all votes to zero and allow re-voting. This cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleReset}
+                  className="bg-red-500 hover:bg-red-600"
+                >
+                  Reset
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
       
