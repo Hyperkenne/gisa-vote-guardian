@@ -116,6 +116,8 @@ const Vote = () => {
     sportsWelfare: false,
   });
   const [loading, setLoading] = useState(true);
+  const [resetPassword, setResetPassword] = useState('');
+  const [passwordError, setPasswordError] = useState(false);
   const { toast } = useToast();
   
   // Load previous votes
@@ -195,6 +197,19 @@ const Vote = () => {
   };
 
   const handleReset = async () => {
+    // Check if password is correct
+    if (resetPassword !== "EL SHARAWY") {
+      setPasswordError(true);
+      toast({
+        title: "Incorrect Password",
+        description: "The password you entered is incorrect.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setPasswordError(false);
+    
     try {
       const success = await resetVoteCounts();
       if (success) {
@@ -210,6 +225,8 @@ const Vote = () => {
           generalSecretary: false,
           sportsWelfare: false,
         });
+        // Clear password field
+        setResetPassword('');
       } else {
         toast({
           title: "Reset Failed",
@@ -261,10 +278,28 @@ const Vote = () => {
                 <AlertDialogTitle>Reset All Votes?</AlertDialogTitle>
                 <AlertDialogDescription>
                   This action will reset all votes to zero and allow re-voting. This cannot be undone.
+                  Please enter the administrator password to continue.
                 </AlertDialogDescription>
               </AlertDialogHeader>
+              <div className="py-4">
+                <Input
+                  type="password"
+                  placeholder="Enter password"
+                  value={resetPassword}
+                  onChange={(e) => setResetPassword(e.target.value)}
+                  className={passwordError ? "border-red-500" : ""}
+                />
+                {passwordError && (
+                  <p className="text-red-500 text-sm mt-1">Incorrect password</p>
+                )}
+              </div>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogCancel onClick={() => {
+                  setPasswordError(false);
+                  setResetPassword('');
+                }}>
+                  Cancel
+                </AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleReset}
                   className="bg-red-500 hover:bg-red-600"
