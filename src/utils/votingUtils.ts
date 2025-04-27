@@ -3,7 +3,7 @@ import { db } from "../services/firebase";
 import { 
   doc, setDoc, getDoc, updateDoc, increment, 
   collection, getDocs, Timestamp, onSnapshot,
-  serverTimestamp
+  serverTimestamp, deleteDoc
 } from "firebase/firestore";
 
 // Initialize the fingerprint agent
@@ -301,7 +301,7 @@ export const resetVoteCounts = async (): Promise<boolean> => {
     const userVotesSnapshot = await getDocs(userVotesRef);
     
     // Delete all existing user vote documents
-    const deletePromises = userVotesSnapshot.docs.map(doc => doc.ref.delete());
+    const deletePromises = userVotesSnapshot.docs.map(userDoc => deleteDoc(userDoc.ref));
     await Promise.all(deletePromises);
     
     console.log("Deleted all user vote documents");
