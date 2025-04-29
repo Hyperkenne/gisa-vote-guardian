@@ -52,6 +52,13 @@ const authorizedEmails: string[] = [
   "malali@student.gitam.edu", // Fixed domain from gitam.in
   "aalfaqee@student.gitam.edu", // Fixed domain from gitam.in
   "iiliyasu@student.gitam.edu", // Fixed domain from gitam.in
+  // New email addresses added
+  "kmagessa@gitam.in",
+  "liddi@gitam.in",
+  "mjabbi@student.gitam.edu",
+  "odafalla@student.gitam.edu",
+  "flichuch@gitam.in"
+  // Note: hmohamme@student.gitam.edu is already in the list above
 ];
 
 // Check if email is in the authorized list
