@@ -18,8 +18,10 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import VoteSection from '@/components/VoteSection';
-import { initialVoteData, VoteData, getUserVotes, recordVote, hasVoted, resetVoteCounts } from '@/utils/votingUtils';
-import { AlertCircle, CheckCircle, Settings } from 'lucide-react';
+import { initialVoteData, VoteData, getUserVotes, recordVote, hasVoted } from '@/utils/votingUtils';
+import { resetEverything, getCurrentEmail, logoutEmail } from '@/utils/authUtils';
+import { AlertCircle, CheckCircle, Settings, LogOut } from 'lucide-react';
+import LoginForm from '@/components/LoginForm';
 
 // Presidential candidates
 const presidentialCandidates = [
@@ -118,11 +120,27 @@ const Vote = () => {
   const [loading, setLoading] = useState(true);
   const [resetPassword, setResetPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
+  const [authenticated, setAuthenticated] = useState(false);
   const { toast } = useToast();
   
-  // Load previous votes
+  // Check if user is authenticated
+  useEffect(() => {
+    const checkAuth = () => {
+      const email = getCurrentEmail();
+      if (email) {
+        setAuthenticated(true);
+      }
+      setLoading(false);
+    };
+    
+    checkAuth();
+  }, []);
+  
+  // Load previous votes if authenticated
   useEffect(() => {
     const loadVotes = async () => {
+      if (!authenticated) return;
+      
       try {
         // Get user votes
         const userVotes = await getUserVotes();
@@ -147,11 +165,22 @@ const Vote = () => {
       }
     };
     
-    loadVotes();
-  }, []);
+    if (authenticated) {
+      loadVotes();
+    }
+  }, [authenticated]);
   
   // Handle vote for a position
   const handleVote = async (position: keyof VoteData, candidateId: string) => {
+    if (!authenticated) {
+      toast({
+        title: "Authentication required",
+        description: "Please login before voting.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (votedPositions[position]) {
       toast({
         title: "Already voted",
@@ -211,11 +240,11 @@ const Vote = () => {
     setPasswordError(false);
     
     try {
-      const success = await resetVoteCounts();
+      const success = await resetEverything(resetPassword);
       if (success) {
         toast({
-          title: "Votes Reset",
-          description: "All votes have been successfully reset.",
+          title: "System Reset",
+          description: "All votes and email authentications have been successfully reset.",
         });
         // Reset local state
         setVotes(initialVoteData);
@@ -225,12 +254,13 @@ const Vote = () => {
           generalSecretary: false,
           sportsWelfare: false,
         });
-        // Clear password field
+        // Clear password field and log out
         setResetPassword('');
+        setAuthenticated(false);
       } else {
         toast({
           title: "Reset Failed",
-          description: "Failed to reset votes. Please try again.",
+          description: "Failed to reset the system. Please try again.",
           variant: "destructive",
         });
       }
@@ -238,10 +268,23 @@ const Vote = () => {
       console.error('Error resetting votes:', error);
       toast({
         title: "Error",
-        description: "An error occurred while resetting votes.",
+        description: "An error occurred while resetting the system.",
         variant: "destructive",
       });
     }
+  };
+  
+  const handleLogout = () => {
+    logoutEmail();
+    setAuthenticated(false);
+    toast({
+      title: "Logged out",
+      description: "You have been successfully logged out.",
+    });
+  };
+  
+  const handleLoginSuccess = () => {
+    setAuthenticated(true);
   };
 
   if (loading) {
@@ -250,6 +293,17 @@ const Vote = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-election-primary mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Show login form if not authenticated
+  if (!authenticated) {
+    return (
+      <div className="bg-election-light min-h-screen py-12">
+        <div className="election-container max-w-md">
+          <LoginForm onSuccess={handleLoginSuccess} />
         </div>
       </div>
     );
@@ -266,53 +320,71 @@ const Vote = () => {
             </p>
           </div>
           
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <Settings className="h-4 w-4" />
-                Reset Votes
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Reset All Votes?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action will reset all votes to zero and allow re-voting. This cannot be undone.
-                  Please enter the administrator password to continue.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <div className="py-4">
-                <Input
-                  type="password"
-                  placeholder="Enter password"
-                  value={resetPassword}
-                  onChange={(e) => setResetPassword(e.target.value)}
-                  className={passwordError ? "border-red-500" : ""}
-                />
-                {passwordError && (
-                  <p className="text-red-500 text-sm mt-1">Incorrect password</p>
-                )}
-              </div>
-              <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => {
-                  setPasswordError(false);
-                  setResetPassword('');
-                }}>
-                  Cancel
-                </AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleReset}
-                  className="bg-red-500 hover:bg-red-600"
-                >
-                  Reset
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              className="flex items-center gap-2"
+              onClick={handleLogout}
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </Button>
+            
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <Settings className="h-4 w-4" />
+                  Reset Votes
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Reset All Votes?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action will reset all votes and email authentications to zero and allow re-voting. This cannot be undone.
+                    Please enter the administrator password to continue.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="py-4">
+                  <Input
+                    type="password"
+                    placeholder="Enter password"
+                    value={resetPassword}
+                    onChange={(e) => setResetPassword(e.target.value)}
+                    className={passwordError ? "border-red-500" : ""}
+                  />
+                  {passwordError && (
+                    <p className="text-red-500 text-sm mt-1">Incorrect password</p>
+                  )}
+                </div>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => {
+                    setPasswordError(false);
+                    setResetPassword('');
+                  }}>
+                    Cancel
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleReset}
+                    className="bg-red-500 hover:bg-red-600"
+                  >
+                    Reset
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
       </div>
       
       <div className="election-container py-8">
+        <Alert className="mb-8">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            You are logged in with your email. You can only vote once for each position.
+          </AlertDescription>
+        </Alert>
+        
         {Object.values(votedPositions).every(voted => voted) ? (
           <Card className="bg-green-50 p-6 mb-8 border-green-200">
             <div className="flex items-center mb-4">
@@ -330,14 +402,7 @@ const Vote = () => {
               View Results
             </Button>
           </Card>
-        ) : (
-          <Alert className="mb-8">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              You can only vote once for each position. Your vote is anonymous but secured.
-            </AlertDescription>
-          </Alert>
-        )}
+        ) : null}
         
         <VoteSection
           title="Presidential Candidates"
