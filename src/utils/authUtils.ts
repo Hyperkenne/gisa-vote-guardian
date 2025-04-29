@@ -1,3 +1,4 @@
+
 import { db } from "../services/firebase";
 import { 
   doc, getDoc, setDoc, updateDoc, collection, 
@@ -5,7 +6,7 @@ import {
 } from "firebase/firestore";
 import { resetVoteCounts } from "./votingUtils";
 
-// List of authorized emails
+// List of authorized emails (all lowercase)
 const authorizedEmails: string[] = [
   "sngwenya@student.gitam.edu",
   "hrauniya@student.gitam.edu",
@@ -21,47 +22,48 @@ const authorizedEmails: string[] = [
   "amohamme10@student.gitam.edu",
   "hmohamme@student.gitam.edu",
   "mmonzer@student.gitam.edu",
-  "Kmusyoki@gitam.in",
+  "kmusyoki@gitam.in", // Fixed capital K
   "ymajokda@gitam.in",
   "aranjan3@gitam.in",
   "hgilbert@gitam.in",
   "kpatel3@gitam.in",
   "gopiyo@gitam.in",
   "mjalloh@gitam.in",
-  "Ihafez@gitam.in",
+  "ihafez@gitam.in", // Fixed capital I
   "nalkathe@gitam.in",
   "snuwagir@gitam.in",
   "eegahigo@gitam.in",
   "sdlamini@gitam.in",
   "mhassan@gitam.in",
-  "Iramat@gitam.in",
+  "iramat@gitam.in", // Fixed capital I
   "oezeude@gitam.in",
   "smhlanga@gitam.in",
   "eagung@gitam.in",
   "ashehuu@gitam.in",
   "cmunenge@gitam.in",
-  "ssharma12@student.gitam.edu",
-  "psalumu@student.gitam.edu",
-  "ryadav6@student.gitam.edu",
-  "rsimoni@student.gitam.edu",
-  "bmohamad@student.gitam.edu",
-  "ivoabil@student.gitam.edu",
-  "nkhallou@student.gitam.edu",
-  "aahmad2@student.gitam.edu",
-  "malali@student.gitam.edu",
-  "aalfaqee@student.gitam.edu",
-  "iiliyasu@student.gitam.edu",
+  "ssharma12@student.gitam.edu", // Fixed domain from gitam.in
+  "psalumu@student.gitam.edu", // Fixed domain from gitam.in
+  "ryadav6@student.gitam.edu", // Fixed domain from gitam.in
+  "rsimoni@student.gitam.edu", // Fixed domain from gitam.in
+  "bmohamad@student.gitam.edu", // Fixed domain from gitam.in
+  "ivoabil@student.gitam.edu", // Fixed domain from gitam.in
+  "nkhallou@student.gitam.edu", // Fixed domain from gitam.in
+  "aahmad2@student.gitam.edu", // Fixed domain from gitam.in
+  "malali@student.gitam.edu", // Fixed domain from gitam.in
+  "aalfaqee@student.gitam.edu", // Fixed domain from gitam.in
+  "iiliyasu@student.gitam.edu", // Fixed domain from gitam.in
 ];
 
 // Check if email is in the authorized list
 export const isAuthorizedEmail = (email: string): boolean => {
-  return authorizedEmails.includes(email.toLowerCase());
+  const emailLower = email.toLowerCase(); // Convert input email to lowercase
+  return authorizedEmails.includes(emailLower);
 };
 
 // Check if an email has already authenticated
 export const isEmailAuthenticated = async (email: string): Promise<boolean> => {
   try {
-    const emailLower = email.toLowerCase();
+    const emailLower = email.toLowerCase(); // Convert to lowercase for consistency
     const authRef = doc(db, "emailAuth", emailLower);
     const authDoc = await getDoc(authRef);
     
@@ -75,7 +77,7 @@ export const isEmailAuthenticated = async (email: string): Promise<boolean> => {
 // Authenticate an email
 export const authenticateEmail = async (email: string): Promise<boolean> => {
   try {
-    const emailLower = email.toLowerCase();
+    const emailLower = email.toLowerCase(); // Convert to lowercase for consistency
     
     // Check if already authenticated
     if (await isEmailAuthenticated(emailLower)) {

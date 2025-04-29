@@ -14,6 +14,7 @@ import { Mail } from 'lucide-react';
 const formSchema = z.object({
   email: z.string()
     .email("Please enter a valid email")
+    .transform(email => email.toLowerCase()) // Ensure email is always lowercase
     .refine((email) => isAuthorizedEmail(email), {
       message: "This email is not authorized to vote",
     }),
@@ -39,8 +40,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   const handleSubmit = async (values: FormValues) => {
     setIsLoading(true);
     try {
+      const email = values.email.toLowerCase(); // Ensure email is lowercase
+      
       // Check if email has already authenticated
-      const alreadyAuthenticated = await isEmailAuthenticated(values.email);
+      const alreadyAuthenticated = await isEmailAuthenticated(email);
       
       if (alreadyAuthenticated) {
         toast({
@@ -53,7 +56,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       }
       
       // Authenticate the email
-      const success = await authenticateEmail(values.email);
+      const success = await authenticateEmail(email);
       
       if (success) {
         toast({
@@ -105,6 +108,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
                         className="pl-10"
                         {...field}
                         disabled={isLoading}
+                        onChange={(e) => field.onChange(e.target.value.toLowerCase())} // Force lowercase while typing
                       />
                     </div>
                   </FormControl>
