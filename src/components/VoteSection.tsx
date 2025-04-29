@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import CandidateCard, { CandidateProps } from './CandidateCard';
 
 interface VoteSectionProps {
@@ -25,13 +25,13 @@ const VoteSection: React.FC<VoteSectionProps> = ({
   };
 
   return (
-    <section className="mb-16">
-      <div className="mb-6">
-        <h2 className="text-2xl md:text-3xl font-bold text-election-dark">{title}</h2>
-        <p className="text-gray-600 mt-1">{description}</p>
+    <section className="mb-8 md:mb-16">
+      <div className="mb-4 md:mb-6">
+        <h2 className="text-xl md:text-3xl font-bold text-election-dark">{title}</h2>
+        <p className="text-sm md:text-base text-gray-600 mt-1">{description}</p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {candidates.map((candidate) => (
           <CandidateCard
             key={candidate.id}

@@ -3,6 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 export interface CandidateProps {
   id: string;
@@ -43,20 +44,22 @@ const CandidateCard: React.FC<CandidateProps> = ({
           <CheckCircle2 className="h-6 w-6" />
         </div>
       )}
-      <div className="h-40 bg-gradient-election flex items-center justify-center overflow-hidden">
-        {photoUrl ? (
-          <img 
-            src={photoUrl} 
-            alt={name} 
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-20 h-20 rounded-full bg-white/30 flex items-center justify-center">
-            <span className="text-white text-3xl font-bold">
-              {name.charAt(0)}
-            </span>
-          </div>
-        )}
+      <div className="overflow-hidden">
+        <AspectRatio ratio={4/3} className="bg-gradient-election">
+          {photoUrl ? (
+            <img 
+              src={photoUrl} 
+              alt={name} 
+              className="w-full h-full object-contain"
+            />
+          ) : (
+            <div className="w-20 h-20 rounded-full bg-white/30 flex items-center justify-center">
+              <span className="text-white text-3xl font-bold">
+                {name.charAt(0)}
+              </span>
+            </div>
+          )}
+        </AspectRatio>
       </div>
       <CardContent className="pt-4">
         <h3 className="font-bold text-lg">{name}</h3>

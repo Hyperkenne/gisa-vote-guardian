@@ -22,6 +22,7 @@ import { initialVoteData, VoteData, getUserVotes, recordVote, hasVoted } from '@
 import { resetEverything, getCurrentEmail, logoutEmail } from '@/utils/authUtils';
 import { AlertCircle, CheckCircle, Settings, LogOut } from 'lucide-react';
 import LoginForm from '@/components/LoginForm';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Presidential candidates
 const presidentialCandidates = [
@@ -122,6 +123,7 @@ const Vote = () => {
   const [passwordError, setPasswordError] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
   // Check if user is authenticated
   useEffect(() => {
@@ -312,72 +314,79 @@ const Vote = () => {
   return (
     <>
       <div className="bg-election-light py-8">
-        <div className="election-container flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-election-dark">Cast Your Vote</h1>
-            <p className="text-gray-600 mt-2">
-              Select one candidate for each position. You can only vote once per position.
-            </p>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              className="flex items-center gap-2"
-              onClick={handleLogout}
-            >
-              <LogOut className="h-4 w-4" />
-              Logout
-            </Button>
+        <div className="election-container px-4">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+            <div>
+              <h1 className="text-2xl md:text-4xl font-bold text-election-dark">Cast Your Vote</h1>
+              <p className="text-gray-600 mt-2 text-sm md:text-base">
+                Select one candidate for each position. You can only vote once per position.
+              </p>
+            </div>
             
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" className="gap-2">
-                  <Settings className="h-4 w-4" />
-                  Reset Votes
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Reset All Votes?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action will reset all votes and email authentications to zero and allow re-voting. This cannot be undone.
-                    Please enter the administrator password to continue.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <div className="py-4">
-                  <Input
-                    type="password"
-                    placeholder="Enter password"
-                    value={resetPassword}
-                    onChange={(e) => setResetPassword(e.target.value)}
-                    className={passwordError ? "border-red-500" : ""}
-                  />
-                  {passwordError && (
-                    <p className="text-red-500 text-sm mt-1">Incorrect password</p>
-                  )}
-                </div>
-                <AlertDialogFooter>
-                  <AlertDialogCancel onClick={() => {
-                    setPasswordError(false);
-                    setResetPassword('');
-                  }}>
-                    Cancel
-                  </AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleReset}
-                    className="bg-red-500 hover:bg-red-600"
+            <div className="flex flex-wrap items-center gap-2">
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2 text-xs md:text-sm"
+                onClick={handleLogout}
+                size={isMobile ? "sm" : "default"}
+              >
+                <LogOut className="h-3 w-3 md:h-4 md:w-4" />
+                Logout
+              </Button>
+              
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    className="gap-2 text-xs md:text-sm"
+                    size={isMobile ? "sm" : "default"}
                   >
+                    <Settings className="h-3 w-3 md:h-4 md:w-4" />
                     Reset
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="max-w-[90vw] md:max-w-md">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Reset All Votes?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action will reset all votes and email authentications to zero and allow re-voting. This cannot be undone.
+                      Please enter the administrator password to continue.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <div className="py-4">
+                    <Input
+                      type="password"
+                      placeholder="Enter password"
+                      value={resetPassword}
+                      onChange={(e) => setResetPassword(e.target.value)}
+                      className={passwordError ? "border-red-500" : ""}
+                    />
+                    {passwordError && (
+                      <p className="text-red-500 text-sm mt-1">Incorrect password</p>
+                    )}
+                  </div>
+                  <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+                    <AlertDialogCancel onClick={() => {
+                      setPasswordError(false);
+                      setResetPassword('');
+                    }}>
+                      Cancel
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleReset}
+                      className="bg-red-500 hover:bg-red-600"
+                    >
+                      Reset
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </div>
         </div>
       </div>
       
-      <div className="election-container py-8">
+      <div className="election-container py-8 px-4">
         <Alert className="mb-8">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
