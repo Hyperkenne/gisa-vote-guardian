@@ -1,3 +1,4 @@
+
 import { db } from "../services/firebase";
 import { 
   doc, getDoc, setDoc, updateDoc, collection, 
@@ -56,7 +57,8 @@ const authorizedEmails: string[] = [
   "liddi@gitam.in",
   "mjabbi@student.gitam.edu",
   "odafalla@student.gitam.edu",
-  "flichuch@gitam.in"
+  "flichuch@gitam.in",
+  "kennedybenard73@gmail.com"
   // Note: hmohamme@student.gitam.edu is already in the list above
 ];
 
