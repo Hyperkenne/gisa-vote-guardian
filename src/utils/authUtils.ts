@@ -58,7 +58,8 @@ const authorizedEmails: string[] = [
   "mjabbi@student.gitam.edu",
   "odafalla@student.gitam.edu",
   "flichuch@gitam.in",
-  "kennedybenard73@gmail.com"
+  "kennedybenard73@gmail.com",
+  "sgupta11@gitam.in"  // Added new email
   // Note: hmohamme@student.gitam.edu is already in the list above
 ];
 
