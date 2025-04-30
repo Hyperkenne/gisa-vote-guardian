@@ -41,17 +41,17 @@ const authorizedEmails: string[] = [
   "eagung@gitam.in",
   "ashehuu@gitam.in",
   "cmunenge@gitam.in",
-  "ssharma12@student.gitam.edu", // Fixed domain from gitam.in
-  "psalumu@student.gitam.edu", // Fixed domain from gitam.in
-  "ryadav6@student.gitam.edu", // Fixed domain from gitam.in
-  "rsimoni@student.gitam.edu", // Fixed domain from gitam.in
-  "bmohamad@student.gitam.edu", // Fixed domain from gitam.in
-  "ivoabil@student.gitam.edu", // Fixed domain from gitam.in
-  "nkhallou@student.gitam.edu", // Fixed domain from gitam.in
-  "aahmad2@student.gitam.edu", // Fixed domain from gitam.in
-  "malali@student.gitam.edu", // Fixed domain from gitam.in
-  "aalfaqee@student.gitam.edu", // Fixed domain from gitam.in
-  "iiliyasu@student.gitam.edu", // Fixed domain from gitam.in
+  "ssharma12@gitam.in", // Changed domain from @student.gitam.edu to @gitam.in
+  "psalumu@gitam.in", // Changed domain from @student.gitam.edu to @gitam.in
+  "ryadav6@gitam.in", // Changed domain from @student.gitam.edu to @gitam.in
+  "rsimoni@gitam.in", // Changed domain from @student.gitam.edu to @gitam.in
+  "bmohamad@gitam.in", // Changed domain from @student.gitam.edu to @gitam.in
+  "ivoabil@gitam.in", // Changed domain from @student.gitam.edu to @gitam.in
+  "nkhallou@gitam.in", // Changed domain from @student.gitam.edu to @gitam.in
+  "aahmad2@gitam.in", // Changed domain from @student.gitam.edu to @gitam.in
+  "malali@gitam.in", // Changed domain from @student.gitam.edu to @gitam.in
+  "aalfaqee@gitam.in", // Changed domain from @student.gitam.edu to @gitam.in
+  "iiliyasu@gitam.in", // Changed domain from @student.gitam.edu to @gitam.in
   // New email addresses added
   "kmagessa@gitam.in",
   "liddi@gitam.in",
