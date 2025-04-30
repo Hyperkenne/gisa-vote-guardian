@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -17,11 +16,17 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import VoteSection from '@/components/VoteSection';
 import { initialVoteData, VoteData, getUserVotes, recordVote, hasVoted } from '@/utils/votingUtils';
 import { resetEverything, getCurrentEmail, logoutEmail } from '@/utils/authUtils';
-import { AlertCircle, CheckCircle, Settings, LogOut } from 'lucide-react';
+import { AlertCircle, CheckCircle, Settings, LogOut, UserX } from 'lucide-react';
 import LoginForm from '@/components/LoginForm';
+import ResetEmailForm from '@/components/ResetEmailForm';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 // Presidential candidates
@@ -124,6 +129,8 @@ const Vote = () => {
   const [authenticated, setAuthenticated] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  
+  const [showResetEmailDialog, setShowResetEmailDialog] = useState(false);
   
   // Check if user is authenticated
   useEffect(() => {
@@ -334,6 +341,22 @@ const Vote = () => {
                 Logout
               </Button>
               
+              <Dialog open={showResetEmailDialog} onOpenChange={setShowResetEmailDialog}>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    className="gap-2 text-xs md:text-sm bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100"
+                    size={isMobile ? "sm" : "default"}
+                  >
+                    <UserX className="h-3 w-3 md:h-4 md:w-4" />
+                    Reset Email
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <ResetEmailForm onClose={() => setShowResetEmailDialog(false)} />
+                </DialogContent>
+              </Dialog>
+              
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button 
@@ -342,7 +365,7 @@ const Vote = () => {
                     size={isMobile ? "sm" : "default"}
                   >
                     <Settings className="h-3 w-3 md:h-4 md:w-4" />
-                    Reset
+                    Reset All
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent className="max-w-[90vw] md:max-w-md">

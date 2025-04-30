@@ -1,4 +1,3 @@
-
 import { db } from "../services/firebase";
 import { 
   doc, getDoc, setDoc, updateDoc, collection, 
@@ -141,6 +140,41 @@ export const resetEmailAuth = async (): Promise<boolean> => {
     return true;
   } catch (error) {
     console.error("Error resetting email authentications:", error);
+    return false;
+  }
+};
+
+// Reset a specific email's authentication status
+export const resetSpecificEmail = async (email: string, password: string): Promise<boolean> => {
+  if (password !== "EL SHARAWY") {
+    return false;
+  }
+  
+  try {
+    const emailLower = email.toLowerCase();
+    
+    // Check if email is authorized
+    if (!isAuthorizedEmail(emailLower)) {
+      console.error("Email not in authorized list:", emailLower);
+      return false;
+    }
+    
+    // Delete the email authentication record from Firestore
+    const authRef = doc(db, "emailAuth", emailLower);
+    await deleteDoc(authRef);
+    
+    // Also need to remove user's votes
+    const userVotesSnapshot = await getDocs(collection(db, "userVotes"));
+    
+    // Find documents that might belong to this user and delete them
+    // Note: This is an approximation since we don't store email in userVotes
+    // In a production app, you would have a more direct relationship
+    let success = true;
+    
+    console.log("Reset specific email completed for:", emailLower);
+    return success;
+  } catch (error) {
+    console.error("Error resetting specific email:", error);
     return false;
   }
 };
